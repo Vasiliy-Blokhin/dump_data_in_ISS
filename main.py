@@ -1,3 +1,3 @@
 from module.worker import Dump as D
 
-print(D.create_time_json_file())
+print(D.write_data_in_file())
