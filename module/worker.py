@@ -3,20 +3,12 @@ from datetime import datetime
 from time import sleep
 import pytz
 import logging
-import sys
 import requests
 import json
 
-from module.settings import DUMP_DATA, IMOEX_URL
+from module.settings import DUMP_DATA, IMOEX_URL, SPLIT_SYM, handler
 
-# Запуск логгера.
-# Описание хандлера для логгера.
-handler = logging.StreamHandler(sys.stdout)
-formater = logging.Formatter(
-    '%(name)s, %(funcName)s, %(asctime)s, %(levelname)s - %(message)s.'
-)
 
-handler.setFormatter(formater)
 logger = logging.getLogger(name=__name__)
 logger.setLevel(logging.DEBUG)
 logger.addHandler(handler)
@@ -32,7 +24,7 @@ class Dump():
         post=False,
         headers=None,
         body=None,
-        delete=None
+        delete=False
     ):
         """ Получение информации с запроса на сервер."""
         try:
@@ -64,7 +56,7 @@ class Dump():
 
     @staticmethod
     def get_current_data():
-        return '{:%d.%m.%y}'.format(datetime.now())
+        return '{:%d-%m-%y}'.format(datetime.now())
 
     @staticmethod
     def get_current_time():
@@ -89,10 +81,29 @@ class Dump():
         return time_json_file_name
 
     @classmethod
-    def write_data_in_file(cls, url=None):
+    def write_data_in_file(cls, data=None, file=None):
+        if data is None:
+            data = cls.get_api_response(url=IMOEX_URL)
+        if file is None:
+            file = cls.create_time_json_file()
+
+        cls.save_file(
+            file=file,
+            data=data
+        )
+
+    @classmethod
+    def is_work_time(cls, url=None):
         if url is None:
             url = IMOEX_URL
-        cls.save_file(
-            file=cls.create_time_json_file(),
-            data=cls.get_api_response(url=url)
-        )
+
+        time_str = cls.get_current_time().split(SPLIT_SYM)
+        time = int(time_str[0]) + int(time_str[1]) / 100
+
+        data = cls.get_api_response(url=url)
+        if (
+            data[1]['marketdata'][0]['TRADINGSESSION'] is not None
+            and (time > 11 or time < 18)
+        ):
+            return True
+        return False
