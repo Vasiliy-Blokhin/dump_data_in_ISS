@@ -1,6 +1,10 @@
 import os
 import sys
 import logging
+from dotenv import load_dotenv
+
+
+load_dotenv()
 
 handler = logging.StreamHandler(sys.stdout)
 formater = logging.Formatter(
@@ -9,7 +13,9 @@ formater = logging.Formatter(
 
 handler.setFormatter(formater)
 
-BASE_DIR = os.getcwd()
+BASE_DIR: str = (
+    os.getenv('BASE_DIR') if os.getenv('BASE_DIR') else os.getcwd()
+)
 DUMP_DATA = BASE_DIR + '/dump_data'
 
 # URL для получения данных Мосбиржи.

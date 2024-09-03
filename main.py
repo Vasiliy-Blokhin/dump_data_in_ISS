@@ -16,7 +16,7 @@ if '__main__' == __name__:
         try:
             if D.is_work_time():
                 D.write_data_in_file(
-                    data=F.return_data()
+                    data=F.return_data(),
                 )
                 logger.info('file is save')
         except Exception as error:
