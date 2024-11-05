@@ -37,31 +37,6 @@ class Filter(Dump):
         return data
 
     @classmethod
-    def api_response_filter(self):
-        """ Фильтрация данных, полученных с запроса."""
-        result = []
-        # Получение и проверка данных.
-        resp = self.get_api_response(url=IMOEX_URL)
-        # Фильтрация полученных данных (из разных "графов").
-        for element in resp[1][self.type_data]:
-            # Оставляет только акции.
-            if (
-                self.type_data == 'securities'
-                and element.get('INSTRID') != 'EQIN'
-            ):
-                continue
-            if element.get('BOARDID') not in SHARE_GROUPS:
-                continue
-            new_dict = {}
-            # Добавление только необходимых параметров из списка.
-            for key, value in element.items():
-                if key in NEEDFUL:
-                    new_dict[key] = value
-            result.append(new_dict)
-        # Проверка и вывод результатов.
-        return result
-
-    @classmethod
     def union_api_response(self, data_sec, data_md):
         """ Добавляет доплнительные параметры и сводит всё в одну БД."""
         result = []
@@ -91,12 +66,29 @@ class Filter(Dump):
 
     @classmethod
     def return_data(self):
+        """ Фильтрация данных, полученных с запроса."""
+        result = []
         data_list = []
+        logger.info('get response info from ISS')
+        # Фильтрация полученных данных (из разных "графов").
         for type_data in TYPE_DATA_IMOEX:
-            # Определение "графы" для сбора данных.
-            self.type_data = type_data
-            # Отправка запроса, получение, первоначальная фильтрация.
-            data = self.api_response_filter()
-            data_list.append(data)
-        # Сведение БД и сохранение.
-        return self.union_api_response(*data_list)
+            for element in self.get_api_response(
+                url=IMOEX_URL
+            )[1][type_data]:
+                # Оставляет только акции.
+                if (
+                    type_data == 'securities'
+                    and element.get('INSTRID') != 'EQIN'
+                ):
+                    continue
+                if element.get('BOARDID') not in SHARE_GROUPS:
+                    continue
+                new_dict = {}
+                # Добавление только необходимых параметров из списка.
+                for key, value in element.items():
+                    if key in NEEDFUL:
+                        new_dict[key] = value
+                data_list.append(new_dict)
+            result.append(data_list)
+
+        return self.union_api_response(*result)
